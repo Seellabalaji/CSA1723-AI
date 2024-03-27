@@ -1,87 +1,65 @@
-#10 A* Algorithm
+import heapq
 
-from queue import PriorityQueue
-
-# Creating Base Class
-class State(object):
-    def __init__(self, value, parent, start=0, goal=0):
-        self.children = []
+class Node:
+    def __init__(self, state, cost, parent=None):
+        self.state = state
+        self.cost = cost
         self.parent = parent
-        self.value = value
-        self.dist = 0
-        if parent:
-            self.start = parent.start
-            self.goal = parent.goal
-            self.path = parent.path[:]
-            self.path.append(value)
-        else:
-            self.path = [value]
-            self.start = start
-            self.goal = goal
 
-    def GetDistance(self):
-        pass
+    def __lt__(self, other):
+        return self.cost < other.cost
 
-    def CreateChildren(self):
-        pass
+def astar(start, goal, neighbors, heuristic):
+    open_set = []
+    closed_set = set()
 
-# Creating subclass
-class State_String(State):
-    def __init__(self, value, parent, start=0, goal=0):
-        super(State_String, self).__init__(value, parent, start, goal)
-        self.dist = self.GetDistance()
+    heapq.heappush(open_set, start)
 
-    def GetDistance(self):
-        if self.value == self.goal:
-            return 0
-        dist = 0
-        for i in range(len(self.goal)):
-            letter = self.goal[i]
-            dist += abs(i - self.value.index(letter))
-        return dist
+    while open_set:
+        current_node = heapq.heappop(open_set)
 
-    def CreateChildren(self):
-        if not self.children:
-            for i in range(len(self.goal) - 1):
-                val = self.value
-                val = val[:i] + val[i + 1] + val[i] + val[i + 2 :]
-                child = State_String(val, self)
-                self.children.append(child)
+        if current_node.state == goal:
+            path = []
+            while current_node:
+                path.append(current_node.state)
+                current_node = current_node.parent
+            return path[::-1]
 
-# Creating a class that holds the final magic
-class A_Star_Solver:
-    def __init__(self, start, goal):
-        self.path = []
-        self.visitedQueue = []
-        self.priorityQueue = PriorityQueue()
-        self.start = start
-        self.goal = goal
+        closed_set.add(current_node.state)
 
-    def Solve(self):
-        startState = State_String(self.start, 0, self.start, self.goal)
+        for neighbor in neighbors(current_node.state):
+            if neighbor in closed_set:
+                continue
 
-        count = 0
-        self.priorityQueue.put((0, count, startState))
-        while not self.path and self.priorityQueue.qsize():
-            closestChild = self.priorityQueue.get()[2]
-            closestChild.CreateChildren()
-            self.visitedQueue.append(closestChild.value)
-            for child in closestChild.children:
-                if child.value not in self.visitedQueue:
-                    count += 1
-                    if not child.dist:
-                        self.path = child.path
-                        break
-                    self.priorityQueue.put((child.dist, count, child))
-        if not self.path:
-            print("Goal is not possible: " + self.goal)
-        return self.path
+            tentative_cost = current_node.cost + 1  # Assuming all edges have a cost of 1
+            neighbor_node = Node(neighbor, tentative_cost, current_node)
 
-if __name__ == "__main__":
-    start1 = input("Enter the starting string: ")
-    goal1 = input("Enter the goal string: ")
-    print("Starting....")
-    a = A_Star_Solver(start1, goal1)
-    a.Solve()
-    for i in range(len(a.path)):
-        print("{0}){1}".format(i, a.path[i]))
+            if neighbor_node not in open_set:
+                heapq.heappush(open_set, neighbor_node)
+            else:
+                for node in open_set:
+                    if node.state == neighbor_node.state and node.cost > neighbor_node.cost:
+                        open_set.remove(node)
+                        heapq.heapify(open_set)
+                        heapq.heappush(open_set, neighbor_node)
+
+    return None
+
+# Example usage:
+def neighbors(state):
+    # Dummy function to return neighbors of a state
+    # In a real scenario, you would implement this based on your problem
+    return [state + 1, state - 1]
+
+def heuristic(state, goal):
+    # Dummy function to calculate heuristic value
+    # In a real scenario, you would implement this based on your problem
+    return abs(goal - state)
+
+start_node = Node(0, 0)
+goal_node = 10
+path = astar(start_node, goal_node, neighbors, heuristic)
+if path:
+    print("Shortest path:", path)
+else:
+    print("No path found.")
